@@ -1,8 +1,9 @@
 package com.hiring.somanath_task.domain.model
 
 import com.hiring.somanath_task.util.AppConstants
+import kotlinx.serialization.Serializable
 
-
+@Serializable
 data class UserHolding(
     val symbol: String,
     val quantity: Int,

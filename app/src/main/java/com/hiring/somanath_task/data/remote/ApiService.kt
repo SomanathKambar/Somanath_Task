@@ -1,11 +1,11 @@
 package com.hiring.somanath_task.data.remote
 
-import android.util.Log
 import com.hiring.somanath_task.domain.model.ApiResult
 import com.hiring.somanath_task.domain.model.UserHolding
 import com.hiring.somanath_task.domain.repository.RemoteDataSource
 import com.hiring.somanath_task.util.AppConstants
 import com.hiring.somanath_task.util.ErrorMapper
+import com.hiring.somanath_task.util.logging.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
@@ -14,19 +14,24 @@ import java.net.SocketTimeoutException
 import java.net.URL
 import javax.net.ssl.SSLHandshakeException
 
-class ApiService : RemoteDataSource {
+class ApiService(private val logger: Logger) : RemoteDataSource {
+
+    private val parser = ApiParser(logger)
+
     companion object {
-        const val TAG = "ApiService"
+        private const val TAG = "ApiService"
     }
-    private val parser = ApiParser()
 
     override suspend fun fetchHoldings(): ApiResult<List<UserHolding>> = withContext(Dispatchers.IO) {
         return@withContext try {
+            logger.d(TAG, "Starting API call...")
 
             val jsonString = makeApiCall()
+            logger.d(TAG, "API call successful, response length: ${jsonString.length}")
 
-            val holdingsDtoList = parser.parseHoldingsJsonWithDebug(jsonString)
+            val holdingsDtoList = parser.parseHoldingsJson(jsonString)
 
+            // Convert DTO to Domain Model
             val domainHoldings = holdingsDtoList.map { dto ->
                 UserHolding(
                     symbol = dto.symbol,
@@ -37,14 +42,14 @@ class ApiService : RemoteDataSource {
                 )
             }
 
-            Log.d(TAG,"Successfully converted to domain models: ${domainHoldings.size} holdings")
+            logger.d(TAG, "Successfully converted to domain models: ${domainHoldings.size} holdings")
             ApiResult.Success(domainHoldings)
 
         } catch (e: Exception) {
-            Log.e("error",  "API call failed")
+            logger.e(TAG, "API call failed", e)
             val appError = ErrorMapper.mapExceptionToAppError(e)
             val userMessage = ErrorMapper.mapToUserMessage(appError)
-            ApiResult.Failure("$userMessage - ${e.message}")
+            ApiResult.Failure(userMessage)
         }
     }
 
@@ -64,43 +69,44 @@ class ApiService : RemoteDataSource {
                 useCaches = false
             }
 
-            Log.d(TAG,"Connecting to: ${AppConstants.API_BASE_URL}")
+            logger.d(TAG, "Connecting to: ${AppConstants.API_BASE_URL}")
 
             val responseCode = connection.responseCode
-            Log.d(TAG,"HTTP Response Code: $responseCode")
+            logger.d(TAG, "HTTP Response Code: $responseCode")
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val response = readResponseSafely(connection)
-                Log.d( TAG,"Response received, length: ${response.length}")
+                logger.d(TAG, "Response received, length: ${response.length}")
                 return response
             } else {
                 val errorStream = connection.errorStream
                 val errorResponse = errorStream?.bufferedReader()?.use { it.readText() } ?: "No error body"
-                Log.e("error", "HTTP Error $responseCode: $errorResponse")
+                logger.e(TAG, "HTTP Error $responseCode: $errorResponse")
                 throw when (responseCode) {
-                    in 400..499 -> Exception("Client error: $responseCode - $errorResponse")
-                    in 500..599 -> Exception("Server error: $responseCode - $errorResponse")
-                    else -> Exception("HTTP error: $responseCode - $errorResponse")
+                    in 400..499 -> Exception("Client error: $responseCode")
+                    in 500..599 -> Exception("Server error: $responseCode")
+                    else -> Exception("HTTP error: $responseCode")
                 }
             }
         } catch (e: SocketTimeoutException) {
             e.printStackTrace()
-            Log.e("error", "Connection timeout")
+            logger.e(TAG, "Connection timeout")
             throw Exception("Connection timeout - server took too long to respond")
         } catch (e: SSLHandshakeException) {
             e.printStackTrace()
-            Log.e("error", "SSL Handshake failed")
+            logger.e(TAG, "SSL Handshake failed")
             throw Exception("Security error - SSL handshake failed")
         } catch (e: SecurityException) {
             e.printStackTrace()
-            Log.e("error", "Network security exception")
+            logger.e(TAG, "Network security exception")
             throw Exception("Network permission denied")
         } catch (e: Exception) {
-            Log.e("error", "Network error")
+            e.printStackTrace()
+            logger.e(TAG, "Network error", e)
             throw Exception("Network error: ${e.message}")
         } finally {
             connection?.disconnect()
-            Log.d("","Connection closed")
+            logger.d(TAG, "Connection closed")
         }
     }
 
@@ -125,7 +131,7 @@ class ApiService : RemoteDataSource {
 
             response.toString()
         } catch (e: Exception) {
-            Log.e("error", "Error reading response")
+            logger.e(TAG, "Error reading response", e)
             throw Exception("Failed to read response: ${e.message}")
         }
     }

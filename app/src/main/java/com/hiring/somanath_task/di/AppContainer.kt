@@ -17,6 +17,8 @@ import com.hiring.somanath_task.domain.usecase.GetCachedHoldingUseCase
 import com.hiring.somanath_task.domain.usecase.GetHoldingUseCase
 import com.hiring.somanath_task.domain.usecase.RefreshHoldingUseCase
 import com.hiring.somanath_task.presentation.viewmodel.PortfolioViewModel
+import com.hiring.somanath_task.util.logging.AndroidLogger
+import com.hiring.somanath_task.util.logging.Logger
 
 interface AppContainer {
     val portfolioViewModelFactory: PortfolioViewModelFactory
@@ -24,6 +26,9 @@ interface AppContainer {
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
 
+    private val logger: Logger by lazy {
+        AndroidLogger()
+    }
     private val databaseHelper: DatabaseHelper by lazy {
         DatabaseHelper(context)
     }
@@ -37,7 +42,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
     }
 
     private val remoteDataSource: RemoteDataSource by lazy {
-        ApiService()
+        ApiService(logger)
     }
 
     private val portfolioRepository: PortfolioRepository by lazy {

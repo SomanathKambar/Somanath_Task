@@ -1,127 +1,73 @@
 package com.hiring.somanath_task.data.remote
 
-import android.util.Log
 import com.hiring.somanath_task.data.local.database.entity.UserHoldingDto
-import org.json.JSONObject
-import org.json.JSONException
+import com.hiring.somanath_task.data.remote.dto.ApiResponse
+import com.hiring.somanath_task.util.logging.Logger
+import kotlinx.serialization.json.Json
 
+class ApiParser(private val logger: Logger) {
 
-class ApiParser {
-companion object {
-    const val TAG = "ApiParser"
-}
+    companion object {
+        private const val TAG = "ApiParser"
+    }
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        coerceInputValues = true
+    }
+
     fun parseHoldingsJson(jsonString: String): List<UserHoldingDto> {
         return try {
-            Log.d(TAG,"Starting JSON parsing...")
+            logger.d(TAG, "Starting JSON parsing with kotlinx.serialization...")
 
             if (jsonString.isBlank()) {
                 throw IllegalArgumentException("Empty JSON response")
             }
 
-            val jsonObject = JSONObject(jsonString)
-            Log.d(TAG,"Root JSON object created")
+            val apiResponse = json.decodeFromString<ApiResponse>(jsonString)
+            logger.d(TAG, "Successfully parsed API response")
 
-            if (!jsonObject.has("data")) {
-                throw JSONException("Missing 'data' field in response")
-            }
+            val holdings = apiResponse.data.userHolding
+            logger.d(TAG, "Found ${holdings.size} holdings in response")
 
-            val dataObject = jsonObject.getJSONObject("data")
-            Log.d(TAG,"Data object extracted")
-
-            if (!dataObject.has("userHolding")) {
-                throw JSONException("Missing 'userHolding' field in data")
-            }
-
-            val dataArray = dataObject.getJSONArray("userHolding")
-            Log.d(TAG,"UserHolding array found with length: ${dataArray.length()}")
-
-            val holdingsList = mutableListOf<UserHoldingDto>()
-
-            for (i in 0 until dataArray.length()) {
-                try {
-                    val holdingJson = dataArray.getJSONObject(i)
-                    val holding = parseHoldingObject(holdingJson, i)
-                    holdingsList.add(holding)
-                    Log.v(TAG,"Successfully parsed holding $i: ${holding.symbol}")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Log.e(TAG, "Failed to parse holding at index $i")
+            // Validate holdings
+            val validHoldings = holdings.filter { holding ->
+                isValidHolding(holding).also { isValid ->
+                    if (!isValid) {
+                        logger.w(TAG, "Skipping invalid holding: ${holding.symbol}")
+                    }
                 }
             }
 
-            if (holdingsList.isEmpty()) {
+            if (validHoldings.isEmpty()) {
                 throw IllegalArgumentException("No valid holdings found in response")
             }
 
-            Log.d(TAG,"Successfully parsed ${holdingsList.size} holdings")
-            holdingsList
-        } catch (e: JSONException) {
-            e.printStackTrace()
-            Log.e(TAG, "JSON parsing error")
-            throw IllegalArgumentException("Invalid JSON format: ${e.message}")
+            logger.d(TAG, "Successfully parsed ${validHoldings.size} valid holdings")
+            validHoldings
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e(TAG, "Unexpected parsing error")
+            logger.e(TAG, "JSON parsing error", e)
             throw IllegalArgumentException("Failed to parse holdings: ${e.message}")
         }
     }
 
-    private fun parseHoldingObject(holdingJson: JSONObject, index: Int): UserHoldingDto {
+    private fun isValidHolding(holding: UserHoldingDto): Boolean {
         return try {
-            val requiredFields = listOf("symbol", "quantity", "ltp", "avgPrice", "close")
-            requiredFields.forEach { field ->
-                if (!holdingJson.has(field)) {
-                    throw JSONException("Missing required field '$field' at index $index")
-                }
+            val isValid = holding.symbol.isNotBlank() &&
+                    holding.quantity >= 0 &&
+                    holding.ltp >= 0.0 &&
+                    holding.avgPrice >= 0.0 &&
+                    holding.close >= 0.0
+
+            if (!isValid) {
+                logger.w(TAG, "Invalid holding data: $holding")
             }
 
-            val symbol = holdingJson.getString("symbol").takeIf { it.isNotBlank() }
-                ?: throw JSONException("Invalid symbol at index $index")
-
-            val quantity = holdingJson.getInt("quantity").takeIf { it >= 0 }
-                ?: throw JSONException("Invalid quantity at index $index")
-
-            val ltp = holdingJson.getDouble("ltp").takeIf { it >= 0 }
-                ?: throw JSONException("Invalid LTP at index $index")
-
-            val avgPrice = holdingJson.getDouble("avgPrice").takeIf { it >= 0 }
-                ?: throw JSONException("Invalid avgPrice at index $index")
-
-            val close = holdingJson.getDouble("close").takeIf { it >= 0 }
-                ?: throw JSONException("Invalid close at index $index")
-
-            UserHoldingDto(
-                symbol = symbol,
-                quantity = quantity,
-                ltp = ltp,
-                avgPrice = avgPrice,
-                close = close
-            )
-        } catch (e: JSONException) {
-            e.printStackTrace()
-            Log.e(TAG, "Failed to parse holding object at index $index")
-            throw e
-        } catch (e: NumberFormatException) {
-            e.printStackTrace()
-            Log.e(TAG, "Number format error in holding at index $index")
-            throw JSONException("Invalid number format at index $index: ${e.message}")
-        }
-    }
-
-    fun parseHoldingsJsonWithDebug(jsonString: String): List<UserHoldingDto> {
-        Log.d(TAG,"Raw JSON response: ${jsonString.take(500)}...")
-
-        return try {
-            val holdings = parseHoldingsJson(jsonString)
-            Log.d(TAG,"Parsing successful. Holdings: ${holdings.size}")
-            holdings.forEachIndexed { index, holding ->
-                Log.d(TAG,"Holding $index: $holding")
-            }
-            holdings
+            isValid
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e(TAG, "Parsing failed with detailed debug info")
-            throw e
+            logger.e(TAG, "Error validating holding: $holding", e)
+            false
         }
     }
 }
