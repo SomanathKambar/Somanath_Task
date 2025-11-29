@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.widget.LinearLayout
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -35,11 +38,23 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        WindowCompat.enableEdgeToEdge(window)
         setupUI()
         observeViewModel()
     }
 
     private fun setupUI() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainRoot)) { view, insets ->
+            val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply padding only to the bottom (and potentially left/right for foldables/landscape)
+            view.setPadding(
+                view.paddingLeft, // keep existing left padding
+                view.paddingTop, // keep existing top padding (or apply top inset here if needed)
+                view.paddingRight, // keep existing right padding
+                systemBarsInsets.bottom // apply bottom inset to avoid navigation bar overlap
+            )
+            insets // return the insets
+        }
         holdingsAdapter = HoldingsAdapter(this)
         binding.holdingsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
