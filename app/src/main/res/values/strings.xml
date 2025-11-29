@@ -1,3 +1,30 @@
 <resources>
     <string name="app_name">Somanath_Task</string>
+    <string name="profit_loss">Profit &amp; Loss<sup>*</sup> </string>
+    <string name="current_value">Current Value<sup>*</sup> </string>
+    <string name="total_investment">Total Investment<sup>*</sup> </string>
+    <string name="todays_pnl">Today\'s Profit &amp; Loss<sup>*</sup> </string>
+    <string name="total_pnl">Total Profit &amp; Loss<sup>*</sup> </string>
+    <string name="default_symbol">SYMBOL</string>
+    <string name="default_ltp">LTP: ₹0.00</string>
+    <string name="default_quantity">Qty: 0</string>
+    <string name="default_pnl">P&amp;L: ₹0.00</string>
+    <string name="default_price">₹0.00</string>
+    <string name="default_price_percentage">₹0.00 (0.00%)</string>
+    <string name="error_network">Please check your internet connection</string>
+    <string name="error_server">Server is temporarily unavailable</string>
+    <string name="error_timeout">Request timed out</string>
+    <string name="error_invalid_data">Invalid data received</string>
+    <string name="error_unknown">An unexpected error occurred</string>
+    <string name="error_empty_data">No investment data available</string>
+    <string name="error_loading">Failed to load portfolio data</string>
+    <string name="action_retry">Try Again</string>
+    <string name="action_use_offline">Use Offline Data</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="empty_title">No investments found</string>
+    <string name="empty_description">Your investment portfolio will appear here</string>
+    <string name="validation_invalid_symbol">Invalid stock symbol</string>
+    <string name="validation_invalid_quantity">Invalid quantity for %s</string>
+    <string name="validation_invalid_price">Invalid price data for %s</string>
+    <string name="portfolio">PortFolio</string>
 </resources>

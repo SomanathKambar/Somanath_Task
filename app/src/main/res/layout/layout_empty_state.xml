@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/padding_xlarge">
+
+    <ImageView
+        android:layout_width="@dimen/icon_size_xlarge"
+        android:layout_height="@dimen/icon_size_xlarge"
+        android:src="@drawable/ic_empty_portfolio"
+        android:contentDescription="@string/empty_title"
+        app:layout_constraintBottom_toTopOf="@+id/emptyTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/emptyTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/empty_title"
+        android:textSize="@dimen/text_size_xlarge"
+        android:textStyle="bold"
+        android:textColor="@color/on_background"
+        android:layout_marginTop="@dimen/margin_large"
+        app:layout_constraintBottom_toTopOf="@+id/emptyDescription"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
+    <TextView
+        android:id="@+id/emptyDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/empty_description"
+        android:textAlignment="center"
+        android:textColor="@color/on_background"
+        android:textSize="@dimen/text_size_medium"
+        android:layout_marginTop="@dimen/margin_medium"
+        app:layout_constraintBottom_toTopOf="@+id/emptyRetryButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/emptyTitle" />
+
+    <Button
+        android:id="@+id/emptyRetryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/button_height"
+        android:text="@string/action_retry"
+        android:layout_marginTop="@dimen/margin_large"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/emptyDescription" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
